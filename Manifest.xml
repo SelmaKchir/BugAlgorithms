@@ -1,0 +1,16 @@
+<package>
+  <description brief="BugAlgorithm">
+
+ 	Bug algorithms
+
+  </description>
+  <author>Selma Kchir</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <depend package="rtt"/>
+  <depend package="rtt_rosnode"/>
+  <depend package="rtt_std_msgs"/>
+  <depend package="rtt_sensor_msgs"/>
+  <depend package="rtt_geometry_msgs"/>
+  <depend package="rtt_nav_msgs"/>
+</package>

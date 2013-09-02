@@ -1,0 +1,59 @@
+import("BugFSM")
+import("rtt_nav_msgs")
+import("rtt_std_msgs")
+import("rtt_sensor_msgs")
+import("rtt_geometry_msgs")
+
+# Loading components
+loadComponent("odometryAdapter","navigation::OdometryAdapter")
+loadComponent("laserAdapter","navigation::LaserAdapter")
+loadComponent("BugAlgo","navigation::Bug2")
+var double period = 0.3; 
+var int priority = LowestPriority; 
+var int scheduler = ORO_SCHED_OTHER; 
+setActivity("odometryAdapter", period, priority, scheduler)
+setActivity("laserAdapter", period, priority, scheduler)
+setActivity("BugAlgo", period, priority, scheduler)
+
+//----connecting Peers--------//
+connectPeers("odometryAdapter", "BugAlgo")
+connectPeers("laserAdapter", "BugAlgo")
+
+
+//-----connecting ports-----//
+var ConnPolicy cp_1;
+cp_1.type = DATA; //DATA = 0, BUFFER = 1
+cp_1.size = 1; //size of the buffer
+cp_1.lock_policy = LOCK_FREE; //UNSYNC = 0, LOCKED = 1, LOCK_FREE = 2
+cp_1.transport = 3; //ROS = 3
+cp_1.name_id = "/laser_scan";
+stream("laserAdapter.laser_scan", cp_1)
+
+var ConnPolicy cp_2;
+cp_2.type = DATA; //DATA = 0, BUFFER = 1
+cp_2.size = 1; //size of the buffer
+cp_2.lock_policy = LOCK_FREE; //UNSYNC = 0, LOCKED = 1, LOCK_FREE = 2
+cp_2.transport = 3; //ROS = 3
+cp_2.name_id = "/odom";
+stream("odometryAdapter.odom", cp_2)
+
+var ConnPolicy cp_3;
+cp_3.type = DATA; //DATA = 0, BUFFER = 1
+cp_3.size = 1; //size of the buffer
+cp_3.lock_policy = LOCK_FREE; //UNSYNC = 0, LOCKED = 1, LOCK_FREE = 2
+cp_3.transport = 3; //ROS = 3
+cp_3.name_id = "/cmd_vel";
+stream("BugAlgo.cmd_vel", cp_3)
+
+
+//-----configuration des composants----
+BugAlgo.configure()
+laserAdapter.configure()
+odometryAdapter.configure()
+#configureComponents()
+
+//-----démarrage des composants-----
+BugAlgo.start()
+laserAdapter.start()
+odometryAdapter.start()
+
