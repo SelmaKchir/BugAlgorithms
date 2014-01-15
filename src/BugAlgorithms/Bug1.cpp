@@ -67,12 +67,10 @@ if(getTotalPath() / 2 - getMinPathToPoint() < 0){
 	}
 */
  	wallFollowingToPoint(p, COUNTERCLOCKWISE);
-	wallFollowing(COUNTERCLOCKWISE);
-	wallFollowing(COUNTERCLOCKWISE);
-	goAhead();
-	faceGoal();
+	cout<<"leave point reached \n";
+        faceGoal();
+	sleep(1);
 }
-
 
 
 
