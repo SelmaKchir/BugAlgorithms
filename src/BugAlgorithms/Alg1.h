@@ -21,8 +21,6 @@
 
 namespace navigation{
 class Alg1 : public BugAlgorithm{
-private:
-geometry_msgs::Point hitPoint;
 
 public: 
 bool found;
@@ -34,7 +32,8 @@ bool leavePointFound();
 bool researchComplete(geometry_msgs::Point, geometry_msgs::Point, geometry_msgs::Point); 
 void goToLeavePoint(geometry_msgs::Point);
 bool isOnMline(geometry_msgs::Point);
-bool closerToGoal(geometry_msgs::Point, geometry_msgs::Point);
+bool closerToGoal(geometry_msgs::Point);
+bool isEncounteredPoint(geometry_msgs::Point);
 
 };
 }
