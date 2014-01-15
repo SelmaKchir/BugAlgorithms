@@ -1,82 +1,80 @@
-#include "Alg2.h"
+#include "Bug2.h"
 using namespace navigation;
 
-Alg2::Alg2(const std::string& name) : BugAlgorithm(name) {
-	found = false;
-	direction = BugAlgorithm::CLOCKWISE;
+Bug2::Bug2(const std::string& name) : BugAlgorithm(name) {
+		found = false;
+		direction = BugAlgorithm::CLOCKWISE;
 }
 
-
-void Alg2::setMinDistToGoal(double value){
-	minDistToGoal = value;
+bool Bug2::leavePointFound() {
+	return found;
 }
 
-
-double Alg2::getMinDistToGoal(){
-	return minDistToGoal;
-}
-
-bool Alg2::leavePointFound() {
-return found;
-}
-
-void Alg2::findLeavePoint(geometry_msgs::Point robotPos, geometry_msgs::Point HP) {
-geometry_msgs::Point goal;
-static double distMin = distanceEuclid(HP, goal);
-static geometry_msgs::Point point = HP;
-double dist_margin = 1.5;
-
-if(distanceEuclid(robotPos, goal) < distMin && distanceEuclid(robotPos, HP) > dist_margin && !isEncounteredPoint(robotPos)){
-	distMin = distanceEuclid(robotPos, goal);
-	point = robotPos;
-	setMinDistToGoal(distMin);
-	recordLeavePoint(robotPos);
-	found = true;
-}
-//if the robot passes through an already visited point, it changes its direction to look for other points
-else if(isEncounteredPoint(robotPos)){
-	cout<<"Already crossed point\n";
-	//return to the last hit point			
-	wallFollowingToPoint(getLastHitPoint(), !direction);
-	//if there is no leave point identified yet, continue wall following on the opposite direction
-	if(leavePoint.size() < hitPoint.size()){
-		wallFollowing(!direction);
-	        if (distanceEuclid(robotPos, goal) < distMin && distanceEuclid(robotPos, HP) > dist_margin && !isEncounteredPoint(robotPos)){
-		recordLeavePoint(robotPos);
+void Bug2::findLeavePoint(geometry_msgs::Point robotPos, geometry_msgs::Point HP) {
+	//cout<<"goal position from findLP : "<<goalPosition.x<<", "<<goalPosition.y<<"\n";
+	 if (isOnMline(robotPos) && closerToGoal(robotPos, HP)&& distanceEuclid(robotPos, HP) > 2.0)
 		found = true;
+}
+
+bool Bug2::closerToGoal(geometry_msgs::Point p1, geometry_msgs::Point p2){
+	bool closer = false;
+	//checks if the current robot position is closer to the goal than the hitPoint
+	if(distanceEuclid(p1,goalPosition) <  distanceEuclid(p2,goalPosition)){
+			closer = true;
+	}
+	cout<<"closer to goal than the hit point?"<<closer<<"\n";
+	return closer;
+}
+
+
+
+bool Bug2::isOnMline(geometry_msgs::Point p){
+	bool mline = false;
+	double distErr = 0.5;
+	double distanceToMline;
+	double a = goalPosition.y-startPosition.y;
+	double b = startPosition.x-goalPosition.x;
+	double c = startPosition.y*(goalPosition.x-startPosition.x)-startPosition.x*(goalPosition.y-startPosition.y);
+	double x0 = p.x;
+	double y0 = p.y;
+	//calculate the distance between the robot and the Mline
+	distanceToMline = abs( a*x0 + b*y0 + c ) / sqrt( a*a+b*b );
+	if (distanceToMline < distErr){
+		//to ensure that the robot is on the Mline, it means between the start position and the goal position
+		if(startPosition.x < goalPosition.x){
+			if(p.x > startPosition.x && p.x < goalPosition.x){
+				mline = true;
+			}
+		}
+		else if(startPosition.x > goalPosition.x){
+			if(p.x < startPosition.x && p.x > goalPosition.x){
+				mline = true;
+			}
+		}
+		else if(startPosition.y < goalPosition.y){
+			if(p.y > startPosition.y && p.y < goalPosition.y){
+				mline = true;
+			}
+		}
+		else{
+			if(p.y < startPosition.y && p.y > goalPosition.y){
+				mline = true;
+			}
 		}
 	}
-}
-}
-
-bool Alg2::researchComplete(geometry_msgs::Point robotPos, geometry_msgs::Point HP, geometry_msgs::Point goalPos){
-return goalIsReachable(robotPos, goalPos, 3.0);
+	cout<<"robot on mline? "<<mline<<"\n";
+        return mline;
 }
 
 
-void Alg2::goToLeavePoint(geometry_msgs::Point p){
+bool Bug2::researchComplete(geometry_msgs::Point robotPos, geometry_msgs::Point HP, geometry_msgs::Point goalPos){
+	return leavePointFound();
 }
 
 
-bool Alg2::isEncounteredPoint(geometry_msgs::Point point){
+void Bug2::goToLeavePoint(geometry_msgs::Point p){}
 
-    bool encountered = false;
-    double distMargin = 0.5;
-    double min_dist = 2.0;
-	if(hitPoint.size() > 0){
-	for (vector<geometry_msgs::Point>::iterator it = hitPoint.begin(); it!=hitPoint.end() - 1; ++it) {
-	 	if((distanceEuclid(*it, point) <= DIST_ERROR) && distanceEuclid(getLastHitPoint(), point) > min_dist)
-		 encountered = true;
-	}
-	}
-	if(leavePoint.size() > 0){
-	for (vector<geometry_msgs::Point>::iterator it = leavePoint.begin(); it!=leavePoint.end() - 1; ++it) {
- 	   if((distanceEuclid(*it, point) <= DIST_ERROR) && distanceEuclid(getLastLeavePoint(), point) > min_dist)
-		encountered = true;
-	}
-	}
-	return encountered;
-}
+
 
 
 
