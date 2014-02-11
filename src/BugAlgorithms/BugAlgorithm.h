@@ -4,6 +4,7 @@
 #include <rtt/TaskContext.hpp>
 #include <rtt/Port.hpp>
 #include <algorithm>
+#include <vector>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Quaternion.h>
@@ -34,7 +35,9 @@ bool direction, leftCheck, rightCheck, hitDefined;
 double totalDistance; 
 geometry_msgs::Point goalPosition; //the goal position
 geometry_msgs::Point startPosition;   //start point position
-geometry_msgs::Point leavePoint, hitPoint; //the point where the robot encounters an obstacle
+//geometry_msgs::Point leavePoint, hitPoint; //the point where the robot encounters an obstacle
+vector<geometry_msgs::Point> hitPoint;
+vector<geometry_msgs::Point> leavePoint;
 geometry_msgs::Point oldPoint;
 
 //------Access the odometry sensor------//
@@ -260,17 +263,24 @@ if(direction == true){
 		}
 }
 void wallFollowingToPoint(geometry_msgs::Point p, bool dir){
-	double distanceMargin = 0.5;
+	double distanceMargin = 0.75;
 	while(distanceEuclid(getPosition(), p) > distanceMargin){
 		wallFollowing(dir);
 	}
 
 	cout<<"at leave point \n";
 	halt();
-	cout<<"stop ...\n";
-	faceGoal();
-	cout<<"face goal...\n";
-	goAhead();
+	geometry_msgs::Twist cmd;
+	cmd.angular.z = -0.5;
+cout<<"speed: "<<cmd.angular.z<<"\n";
+	outport.write(cmd);
+goAhead();
+
+cmd.angular.z = -0.5;
+	cmd.linear.x = 1;
+cout<<"speed: "<<cmd.angular.z<<"\n";
+	outport.write(cmd);
+
 }
 
 void motionToGoal(){
@@ -306,7 +316,7 @@ recordHitPoint(robotPos);
 wallFollowing(direction);
 double tot = totalDistance + 1;	
 setTotalDistance(tot);
-findLeavePoint(robotPos, hitPoint);
+findLeavePoint(robotPos, getLastHitPoint());
 }
 
 
@@ -314,20 +324,43 @@ bool goalReached(geometry_msgs::Point robotPos, geometry_msgs::Point goalPos, do
 	return (distanceEuclid(robotPos, goalPos) <= distError);
 }
 
+
+//get the first hit point
+geometry_msgs::Point getFirstHitPoint(){
+	vector<geometry_msgs::Point>::iterator it = hitPoint.begin();
+	return geometry_msgs::Point(*it);
+}
+
+//get the last hit point
+geometry_msgs::Point getLastHitPoint(){
+	vector<geometry_msgs::Point>::iterator it = hitPoint.end() - 1;
+	return geometry_msgs::Point(*it);
+}
+//get the first leave point
+geometry_msgs::Point getFirstLeavePoint(){
+	vector<geometry_msgs::Point>::iterator it = leavePoint.begin();
+	return geometry_msgs::Point(*it);
+}
+
+//get the last leave point
+geometry_msgs::Point getLastLeavePoint(){
+	vector<geometry_msgs::Point>::iterator it = leavePoint.end() - 1;
+	return geometry_msgs::Point(*it);
+}
+
 void recordHitPoint(geometry_msgs::Point point){
 if(!hitDefined){ 
-	//updates the hitpoint
-	hitPoint.x = point.x;
-	hitPoint.y = point.y;
-	//now the robot switches to the boundary following mode
+	//Add the hit point
+	hitPoint.push_back(point);
+	//now the robot can switch to the boundary following mode
 	hitDefined = true;
 	//isAlreadyLeftLastHitPoint=false;
 	}
 }
 void recordLeavePoint(geometry_msgs::Point point){	
-	leavePoint.x = point.x;
-	leavePoint.y = point.y;
+	leavePoint.push_back(point);
 }
+
 bool goalIsReachable(geometry_msgs::Point robotPos, geometry_msgs::Point goalPos, double distError){
 	bool res = false;
 	faceGoal();
@@ -402,13 +435,13 @@ if (goalReached(robotPos, goalPosition, DIST_ERROR)){
 else if(obstacleInWay()){
 	identifyLeavePoint(direction, robotPos, goalPosition);
 	cout<<"checking --- \n";
-	if(leavePointFound() && researchComplete(robotPos, hitPoint, goalPosition)){
+	if(leavePointFound() && researchComplete(robotPos, getLastHitPoint(), goalPosition)){
 		cout<<"going to the leave point...\n";
-		goToLeavePoint(leavePoint);
+		goToLeavePoint(getLastLeavePoint());
 		halt();
 		faceGoal();
 	}
-	else if(completeCycleAroundObstacle(robotPos, hitPoint) && !leavePointFound()){
+	else if(completeCycleAroundObstacle(robotPos, getLastHitPoint()) && !leavePointFound()){
 		cout<<"no leave point found! hit point encountered again!\n";
 		cout<<"===> goal unreachable \n";
 		//sleep(1);
